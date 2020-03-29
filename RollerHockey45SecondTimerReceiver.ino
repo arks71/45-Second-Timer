@@ -6,6 +6,9 @@
 
  This version works with a wireless receiver so the button to operate it
  can be a distance away from the LED displays
+
+ It also includes an option to connect a micro:bit physically to the Arduino so that
+ other micro:bits can be used to send stop/start commands via the micro:bit radio
  
  Here's how to hook up the Arduino pins to the Large Digit Driver IN
 
@@ -23,9 +26,14 @@
  Each display will use about 150mA with all segments and decimal point on.
 
 */
+
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial mySerial(2, 3); // RX, TX
+
 RF24 radio(9, 10); // CE, CSN
 const byte address[6] = "00001";
 boolean button_state = 0;
@@ -43,7 +51,10 @@ void setup()
 {
   Serial.begin(9600);
   Serial.println("Roller Hockey Timer - Receiver");
-
+  
+  // set the data rate for the SoftwareSerial port
+  mySerial.begin(9600);
+  
   pinMode(segmentClock, OUTPUT);
   pinMode(segmentData, OUTPUT);
   pinMode(segmentLatch, OUTPUT);
@@ -76,49 +87,122 @@ unsigned long startTime = 0;
 unsigned long currentTime = 0;
 unsigned long elapsed = 0;
 
+const int MAX_INPUT=32;
+
+void doStart()
+{
+  startTime=millis();
+  digitalWrite(ledPin, LOW);  // turn LED OFF
+  Serial.println("Start");
+  Serial.println(startTime);
+}
+
+void doStop()
+{
+  Serial.println("Stop");
+  startTime = 0;
+}
+
+String strText="";
+
+// here to process incoming serial data after a terminator received
+void process_data (const char * data)
+  {
+  // for now just display it
+  // (but you could compare it to some value, convert to an integer, etc.)
+  Serial.println (data);
+  strText = data;
+  if (strText.startsWith("start"))
+  {
+    doStart();
+  }
+  else if (strText.startsWith("stop"))
+  {
+    doStop();
+  }
+  else if (strText!="")
+  {
+    Serial.println("unmatched input " + strText);
+  }
+}  // end of process_data
+  
+void processIncomingByte (const byte inByte)
+  {
+  static char input_line [MAX_INPUT];
+  static unsigned int input_pos = 0;
+
+  switch (inByte)
+    {
+
+    case '\n':   // end of text
+      input_line [input_pos] = 0;  // terminating null byte
+      
+      // terminator reached! process input_line here ...
+      process_data (input_line);
+      
+      // reset buffer for next time
+      input_pos = 0;  
+      break;
+
+    case '\r':   // discard carriage return
+      break;
+
+    default:
+      // keep adding if not full ... allow for terminating null byte
+      if (input_pos < (MAX_INPUT - 1))
+        input_line [input_pos++] = inByte;
+      break;
+
+    }  // end of switch
+   
+  } // end of processIncomingByte  
+
 void loop()
 {
-  val = analogRead(A0);  // read input value
-  if ( (val>=0 && val <20) || (val>30 && val<60))
-  {
-    startTime=millis();
-    digitalWrite(ledPin, LOW);  // turn LED OFF
+  //val = analogRead(A0);  // read input value
+  //if ( (val>=0 && val <20) || (val>30 && val<60))
+  //{
+    //startTime=millis();
+    //digitalWrite(ledPin, LOW);  // turn LED OFF
     //Serial.println("RESTART");
-  }
-  else if ((val>60 && val<250)) // (buttons C-70 to 110 (64 in reality on my test kit), d-110 to 150, e 150 to 600)
-  {
-    Serial.println("Blue analog buttons");
-    Serial.println(val);
+  //}
+  //else if ((val>60 && val<250)) // (buttons C-70 to 110 (64 in reality on my test kit), d-110 to 150, e 150 to 600)
+  //{
+    //Serial.println("Blue analog buttons");
+    //Serial.println(val);
     //startTime = 0;
     //Serial.println("STOP");
-  } 
-  else
-  {
-    digitalWrite(ledPin, HIGH);
-  }
+  //} 
+  //else
+  //{
+    //digitalWrite(ledPin, HIGH);
+  //}
 
   if (radio.available())
   {
     char text[32] = "";                 //Saving the incoming data
     radio.read(&text, sizeof(text));    //Reading the data
 
-    String strText = text;
+    strText = text;
     if (strText.startsWith("START"))
     {
-      startTime=millis();
-      digitalWrite(ledPin, LOW);  // turn LED OFF
-      Serial.println("Start");
-      Serial.println(startTime);
+      doStart();
     }
     else if (strText.startsWith("STOP"))
     {
-      Serial.println("Stop");
-      startTime = 0;
+      doStop();
     }
     else if (strText!="")
     {
       Serial.println(strText);
     }
+  }
+
+  // if serial data available, process it
+  while (mySerial.available () > 0)
+  {
+    processIncomingByte (mySerial.read ());
+    Serial.println("Read byte");
   }
   
   //Serial.println("Pre-number setting");
