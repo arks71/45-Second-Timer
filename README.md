@@ -1,8 +1,19 @@
 # 45-Second-Timer
 A 45 second timer for roller hockey rinks based on the Sparkfun Large Digit Driver &amp; Arduino
 
-For a standalone version - use the RollerHockey45SecondTimerAnalog.ino script
+There are a number of variants depending on how you want to use the timer.
 
-For a remotely operated version - use the RollerHockey45SecondTimerTransmitter.ino on one Arduino with digital buttons connected to pins 2 and 3, or an analog button on pin A0,  and the RollerHockey45SecondTimerReceiver.ino on the other Arduino (or multiple Arduinos for multiple receivers) connected to the large digit drivers.  Both Arduinos need connecting to a wireless transceiver, e.g. the nrf24L01 based chips.
+1) Standard alone version using an analog button keypad
+2) Standard alone version using a digital button keypad
+3) Wireless version using a nrf24l01 chipset
+4) Wireless version using a micro:bit for wireless comms
 
-The latest update of the receiver supports using a Micro:bit plugged directly into the receiver Arduino so that the Micro:bit can send serial commands to the Arduino.  This way the Arduino can be controlled via a set of micro:bits as remote controls running my other 'wearable timer' project.
+These are in the subfolders
+1) 45SecondTimer-StandaloneAnalog
+2) 45SecondTimer-StandaloneDigital
+3) ReceiverWithNRF24L01
+4) ReceiverWithMicrobit
+
+Corresponding circuit diagrams are now in the subfolders.
+
+For the wireless versions - you'll either need a second Arduino with a nrf24l01 chip, or one or more micro:bits running my 'wearable' timer software
