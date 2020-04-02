@@ -7,12 +7,16 @@ There are a number of variants depending on how you want to use the timer.
 2) Standard alone version using a digital button keypad
 3) Wireless version using a nrf24l01 chipset
 4) Wireless version using a micro:bit for wireless comms
+5) Transmitter for Wireless version #3 with digital buttons
+6) Transmitter for Wireless version #3 with analog buttons
 
 These are in the subfolders
 1) 45SecondTimer-StandaloneAnalog
 2) 45SecondTimer-StandaloneDigital
 3) ReceiverWithNRF24L01
 4) ReceiverWithMicrobit
+5) Transmitter-nrf24l01-digitalbuttons
+6) Transmitter-nrf24l01-analogbuttons
 
 Corresponding circuit diagrams are now in the subfolders.
 
