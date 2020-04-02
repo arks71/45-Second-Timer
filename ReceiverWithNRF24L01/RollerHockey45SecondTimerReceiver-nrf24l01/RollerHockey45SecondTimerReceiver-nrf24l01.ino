@@ -4,6 +4,9 @@
  Date: March 18th 2020
  License: GNU GPLv3
 
+ This version works with a wireless receiver so the button to operate it
+ can be a distance away from the LED displays
+ 
  Here's how to hook up the Arduino pins to the Large Digit Driver IN
 
  Arduino pin 6 -> CLK (Green on the 6-pin cable)
@@ -22,23 +25,49 @@
 */
 
 #include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
-int start_button_pin = 2;  // for a digital button
-int stop_button_pin = 3;  // for a digital button
-boolean button_state = 0;
-
+RF24 radio(9, 10); // CE, CSN
+const byte address[6] = "00001";
+const int channel = 0;
+//GPIO declarations
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+byte segmentClock = 6;
+byte segmentLatch = 5;
+byte segmentData = 7;
+int val = 0;     // variable for reading the pin status
 int ledPin = LED_BUILTIN; // choose the pin for the LED
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("Roller Hockey Timer - Standalone Digital Buttons");
+  Serial.println("Roller Hockey Timer - Receiver with nrf24l01 wireless");
   
+  pinMode(segmentClock, OUTPUT);
+  pinMode(segmentData, OUTPUT);
+  pinMode(segmentLatch, OUTPUT);
+
   pinMode(ledPin, OUTPUT);  // declare LED as output
-  pinMode(start_button_pin, INPUT);
-  pinMode(stop_button_pin, INPUT);
-  
+
+  digitalWrite(segmentClock, LOW);
+  digitalWrite(segmentData, LOW);
+  digitalWrite(segmentLatch, LOW);
+
+  setUpRadio();
+}
+
+void setUpRadio()
+{
+  Serial.println("Setting up radio receiver.");
+  radio.begin();
+  radio.setChannel(channel);
+  radio.openReadingPipe(0, address);   //Setting the address at which we will receive the data
+  radio.setPALevel(RF24_PA_MAX);       //You can set this as minimum or maximum depending on the distance between the transmitter and receiver.
+  radio.startListening();
+  Serial.println("Radio operating on Channel ");
+  Serial.println(radio.getChannel());
 }
 
 const int MAX_TIME = 45;
@@ -46,6 +75,8 @@ int number = MAX_TIME;
 unsigned long startTime = 0;
 unsigned long currentTime = 0;
 unsigned long elapsed = 0;
+
+const int MAX_INPUT=32;
 
 void doStart()
 {
@@ -61,18 +92,29 @@ void doStop()
   startTime = 0;
 }
 
+String strText="";
+
 void loop()
 {
-  button_state = digitalRead(start_button_pin);
-  if(button_state == HIGH)
-  {
-    doStart();
-  }
 
-  button_state = digitalRead(stop_button_pin);
-  if(button_state == HIGH)
+  if (radio.available())
   {
-    doStop();
+    char text[32] = "";                 //Saving the incoming data
+    radio.read(&text, sizeof(text));    //Reading the data
+
+    strText = text;
+    if (strText.startsWith("START"))
+    {
+      doStart();
+    }
+    else if (strText.startsWith("STOP"))
+    {
+      doStop();
+    }
+    else if (strText!="")
+    {
+      Serial.println(strText);
+    }
   }
     
   if (startTime!=0)
