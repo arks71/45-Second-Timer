@@ -21,3 +21,5 @@ These are in the subfolders
 Corresponding circuit diagrams are now in the subfolders.
 
 For the wireless versions - you'll either need a second Arduino with a nrf24l01 chip, or one or more micro:bits running my 'wearable' timer software
+
+As of 6/5/2020, I've added 'resume' functionality (via a 2nd stop command) to the receivers, so that you can stop the timer for situations such as the ball going out of play and resume from the same position rather than incorrectly resetting the timer to 45 seconds.
