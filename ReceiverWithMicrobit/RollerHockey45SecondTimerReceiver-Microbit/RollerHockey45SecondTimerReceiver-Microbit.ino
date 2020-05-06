@@ -59,26 +59,38 @@ void setup()
 
 }
 
-const int MAX_TIME = 45;
-int number = MAX_TIME;
+double timerLength = 45000;
+int number = 45;
 unsigned long startTime = 0;
 unsigned long currentTime = 0;
-unsigned long elapsed = 0;
+double elapsed = 0;
+double remaining = 0;
 
 const int MAX_INPUT=32;
 
 void doStart()
 {
+  timerLength = 45000;
   startTime=millis();
   digitalWrite(ledPin, LOW);  // turn LED OFF
   Serial.println("Start");
-  Serial.println(startTime);
+  //Serial.println(startTime);
 }
 
 void doStop()
 {
-  Serial.println("Stop");
-  startTime = 0;
+  if (startTime > 0) {
+    currentTime = millis();
+    elapsed = currentTime - startTime;
+    timerLength = (timerLength - elapsed);
+    startTime = 0;
+    Serial.println("Stop");
+  }
+  else {
+    // implement resume on a second 'stop' press
+    startTime = millis();
+    Serial.println("Resume");
+  }
 }
 
 String strText="";
@@ -96,6 +108,12 @@ void process_data (const char * data)
   }
   else if (strText.startsWith("stop"))
   {
+    doStop();
+  }
+  else if (strText.startsWith("resume"))
+  {
+    // now allow for the resume functionality (which is effectively a synonym for stop)
+    // the doStop function will decide whether to stop or resume the timer
     doStop();
   }
   else if (strText!="")
@@ -148,7 +166,9 @@ void loop()
   {
     currentTime = millis();
     elapsed = currentTime - startTime;
-    number = MAX_TIME - floor(elapsed/1000);
+    remaining = (timerLength-elapsed)/1000;
+    //Serial.println(remaining);
+    number = ceil(remaining);
     if (number<0)
     {
       number = 0;
@@ -156,10 +176,11 @@ void loop()
   }
   else
   {
-    number = MAX_TIME;
+    number = ceil(timerLength/1000);
   }
 
   showNumber(number);
+  //Serial.println(number);
 }
 
 //Takes a number and displays 2 numbers. Displays absolute value (no negatives)
